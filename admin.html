@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Smile Dental Clinic</title>
+
+    <!-- External Assets -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Reuse main styles -->
+    <link rel="stylesheet" href="styles.css?v=3">
+
+    <style>
+        body {
+            background-color: #f3f4f6;
+            min-height: 100vh;
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Login Section */
+        #loginSection {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* Dashboard Section */
+        #dashboardSection {
+            display: none;
+            /* Hidden by default */
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            align-items: center;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 1rem;
+            overflow-x: auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        tr:hover {
+            background-color: #f9fafb;
+        }
+
+        .token-badge {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Login Section -->
+    <div id="loginSection">
+        <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">Admin Login</h2>
+        <p style="margin-bottom: 1.5rem; color: #666; font-size: 0.9rem;">Please enter the admin password to continue.
+        </p>
+
+        <form id="loginForm">
+            <div class="form-group" style="margin-bottom: 1rem; text-align: left;">
+                <label>Password</label>
+                <input type="password" id="adminPassword" placeholder="Enter Password" required
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+            <button type="submit" id="loginBtn" class="btn btn-primary" style="width: 100%;">Login</button>
+        </form>
+
+        <p id="loginError" style="color: red; margin-top: 10px; display: none;">Invalid Password</p>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="admin-container">
+        <div class="dashboard-header">
+            <div>
+                <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Admin Dashboard</h1>
+                <p style="color: var(--text-medium);">Manage appointments and patient records</p>
+            </div>
+
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="tabs" style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid #e5e7eb;">
+            <button id="tabAppointments" class="tab-btn active"
+                style="padding: 1rem; border: none; background: none; font-weight: 600; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); cursor: pointer;">
+                <i class="fa-solid fa-calendar-check"></i> Appointments
+            </button>
+            <button id="tabPatients" class="tab-btn"
+                style="padding: 1rem; border: none; background: none; font-weight: 600; color: var(--text-medium); border-bottom: 2px solid transparent; cursor: pointer;">
+                <i class="fa-solid fa-users-medical"></i> Patients & Reports
+            </button>
+        </div>
+
+        <!-- Appointments View -->
+        <div id="appointmentsView">
+            <div class="controls">
+                <div style="flex-grow: 1; max-width: 300px;">
+                    <input type="text" id="filterDate" placeholder="Filter by Date (Select Date)"
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+                <button id="clearFilter" class="btn"
+                    style="background: #e5e7eb; color: var(--text-dark); padding: 10px 16px;">Clear Filter</button>
+
+                <div style="margin-left: auto; display: flex; gap: 10px;">
+                    <button id="sortByDate" class="btn btn-primary" style="font-size: 0.9rem;">
+                        <i class="fa-solid fa-calendar"></i> Sort by Date
+                    </button>
+                    <button id="sortByName" class="btn"
+                        style="background: white; border: 1px solid var(--primary-color); color: var(--primary-color); font-size: 0.9rem;">
+                        <i class="fa-solid fa-arrow-down-a-z"></i> Sort by Name
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Token</th>
+                            <th>Date</th>
+                            <th>Patient Name</th>
+                            <th>Age</th>
+                            <th>Phone</th>
+                            <th>Message/Service</th>
+                            <th>Booked At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointmentsTableBody">
+                        <!-- Rows will be populated by JS -->
+                    </tbody>
+                </table>
+                <div id="loadingSpinner" style="text-align: center; padding: 2rem;">
+                    <i class="fa-solid fa-circle-notch fa-spin"
+                        style="font-size: 2rem; color: var(--primary-color);"></i>
+                </div>
+                <div id="noDataMessage"
+                    style="text-align: center; padding: 2rem; display: none; color: var(--text-medium);">
+                    No appointments found.
+                </div>
+            </div>
+        </div>
+
+        <!-- Patients View -->
+        <div id="patientsView" style="display: none;">
+            <!-- Search & Register Controls -->
+            <div class="controls" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <div style="display: flex; gap: 10px; flex-grow: 1; align-items: center;">
+                    <input type="text" id="patientSearchInput" placeholder="Search by Patient ID or Phone"
+                        style="flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; min-width: 200px;">
+                    <button id="searchPatientBtn" class="btn btn-primary" style="white-space: nowrap;">
+                        <i class="fa-solid fa-search"></i> Search
+                    </button>
+                    <button id="showAllPatientsBtn" class="btn"
+                        style="background: #e5e7eb; color: var(--text-dark); white-space: nowrap;">
+                        Show All
+                    </button>
+                </div>
+                <button id="showRegisterBtn" class="btn"
+                    style="background: #10b981; color: white; padding: 10px 16px; white-space: nowrap;">
+                    <i class="fa-solid fa-user-plus"></i> New Patient
+                </button>
+            </div>
+
+            <!-- Patient Registration Form (Hidden by default) -->
+            <div id="registerPatientForm"
+                style="display: none; background: white; padding: 2rem; border-radius: 1rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                <h3 style="margin-bottom: 1.5rem; color: var(--primary-color);">Register New Patient</h3>
+                <form id="newPatientForm">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem;">Full Name</label>
+                            <input type="text" id="newPatientName" required
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem;">Phone Number</label>
+                            <input type="tel" id="newPatientPhone" required
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem;">Age</label>
+                            <input type="number" id="newPatientAge" required
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem;">Gender</label>
+                            <select id="newPatientGender"
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn btn-primary">Register Patient</button>
+                        <button type="button" id="cancelRegisterBtn" class="btn"
+                            style="background: #ef4444; color: white;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Patient List Table (Default View) -->
+            <div id="patientListSection" class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patientsTableBody">
+                        <!-- Rows will be populated by JS -->
+                    </tbody>
+                </table>
+                <div id="patientsLoading" style="text-align: center; padding: 2rem; display: none;">
+                    <i class="fa-solid fa-circle-notch fa-spin"
+                        style="font-size: 2rem; color: var(--primary-color);"></i>
+                </div>
+            </div>
+
+            <!-- Patient Details & Reports (Hidden until search/select) -->
+            <div id="patientDetailsSection" style="display: none;">
+                <button id="backToPatientsList" class="btn"
+                    style="margin-bottom: 1rem; background: #e5e7eb; color: var(--text-dark);">
+                    <i class="fa-solid fa-arrow-left"></i> Back to List
+                </button>
+
+                <!-- Patient Info Card -->
+                <div
+                    style="background: white; padding: 1.5rem; border-radius: 1rem; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid var(--primary-color);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 id="pName" style="margin-bottom: 0.5rem; font-size: 1.5rem;">Patient Name</h2>
+                            <p style="color: var(--text-medium); margin-bottom: 0.5rem;">
+                                ID: <strong id="pId"
+                                    style="color: var(--text-dark); background: #e5e7eb; padding: 2px 6px; border-radius: 4px;">SDC-XXXXXX</strong>
+                            </p>
+                            <div style="display: flex; gap: 1rem; color: #666; font-size: 0.9rem;">
+                                <span><i class="fa-solid fa-phone"></i> <span id="pPhone"></span></span>
+                                <span><i class="fa-solid fa-cake-candles"></i> <span id="pAge"></span> Years</span>
+                                <span><i class="fa-solid fa-venus-mars"></i> <span id="pGender"></span></span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="downloadReportBtn" class="btn" style="background: #4f46e5; color: white;">
+                                <i class="fa-solid fa-file-pdf"></i> Download Report
+                            </button>
+                            <button id="editPatientBtn" class="btn"
+                                style="background: #f3f4f6; color: var(--text-dark);"><i class="fa-solid fa-pen"></i>
+                                Edit</button>
+                            <button id="deletePatientBtn" class="btn" style="background: #fee2e2; color: #ef4444;"><i
+                                    class="fa-solid fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Report Section -->
+                <div
+                    style="background: white; padding: 1.5rem; border-radius: 1rem; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <h3 style="margin-bottom: 1rem;">Add New Report / Diagnosis</h3>
+                    <form id="addReportForm">
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem;">Diagnosis</label>
+                            <input type="text" id="reportDiagnosis" placeholder="e.g. Dental Caries" required
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem;">Prescription / Treatment</label>
+                            <textarea id="reportPrescription" rows="2"
+                                placeholder="e.g. Amoxicillin 500mg, Root Canal Therapy"
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;"></textarea>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem;">Notes</label>
+                            <textarea id="reportNotes" rows="2" placeholder="Additional notes..."
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Report</button>
+                    </form>
+                </div>
+
+                <!-- History Timeline -->
+                <h3 style="margin-bottom: 1rem;">Medical History</h3>
+                <div id="reportsTimeline" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Reports will be injected here -->
+                </div>
+            </div>
+
+            <!-- No Patient Found Message -->
+            <div id="patientNotFound"
+                style="display: none; text-align: center; padding: 3rem; color: var(--text-medium);">
+                <i class="fa-solid fa-user-slash" style="font-size: 3rem; margin-bottom: 1rem; color: #d1d5db;"></i>
+                <p>No patient found with that ID or Phone Number.</p>
+            </div>
+        </div>
+
+        <!-- Edit Patient Modal -->
+        <div id="editPatientModal"
+            style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;">
+            <div style="background: white; padding: 2rem; border-radius: 1rem; width: 90%; max-width: 500px;">
+                <h3 style="margin-bottom: 1.5rem;">Edit Patient Details</h3>
+                <form id="editPatientForm">
+                    <input type="hidden" id="editPatientId">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem;">Full Name</label>
+                        <input type="text" id="editPatientName" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem;">Phone Number</label>
+                        <input type="tel" id="editPatientPhone" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem;">Age</label>
+                        <input type="number" id="editPatientAge" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem;">Gender</label>
+                        <select id="editPatientGender"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" id="closeEditModalBtn" class="btn"
+                            style="background: #e5e7eb; color: var(--text-dark);">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <script src="admin.js?v=7"></script>
+</body>
+
+</html>

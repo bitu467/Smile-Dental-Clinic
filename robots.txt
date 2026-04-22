@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://smile-dental-ziro-2025.web.app/sitemap.xml
